@@ -1,0 +1,3 @@
+﻿  Main.cpp
+E:\projects\student database\student database\Main.cpp(61,32): warning C4101: ex: неиспользованная локальная переменная
+  student database.vcxproj -> E:\projects\student database\x64\Debug\student database.exe
