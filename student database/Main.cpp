@@ -1,12 +1,14 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
+#include <fstream>
 class Student {
 public:
 	int age;
-	char name [20];
+	char name[20];
 	double GPA;
 	int ID;
+public:
 	void set_information() {
 		std::cout << "Enter student ID number: "; std::cin >> ID;
 		std::cout << "Enter student name: "; std::cin >> name;
@@ -15,48 +17,94 @@ public:
 	}
 	void get_information()
 	{
-		std::cout << "Student ID number: "; std::cout <<  ID << std::endl;
-		std::cout << "Student name: "; std::cout << name << std::endl;
-		std::cout << "Student age: "; std::cout << age << std::endl;
-		std::cout << "Student GPA: "; std::cout << GPA << std::endl;
+		std::cout << ID << "\t" << name << "\t" << age << "\t" << GPA << std::endl;
 	}
+	friend void user_interface(std::vector<Student>Students, Student& St);
 };
 
-std::ostream& operator << (std::ostream& os, const Student& p)
+void user_interface(std::vector<Student>Students, Student& St)
 {
-	return os << "ID: " << p.ID << "\tName: " << p.name << "\tAge: " << p.age << "\tGPA: " << p.GPA << std::endl;
-}
-
-
-void User_interface(std::vector<Student>& Students, Student &Student);
-
-
-int main()
-{
-	std::vector<Student> Students;
-	std::vector<Student>::iterator iter;
-	Student St;
-	User_interface(Students, St);
-	return 0;
-}
-
-
-void User_interface(std::vector<Student> & Students, Student &St)
-{
-	enum User_choice { ADD = 1, DELETE = 2, VIEW = 3, FIND = 4 };
-	int choice = 0;
-	int ID;
+	enum USER_CHOICE { ADD = 1, DELETE = 2, VIEW = 3, FIND = 4 };
+	int user_choice = 0;
+	int find_ID;
 	do {
 		std::cin.exceptions(std::ios_base::failbit);
 		try
 		{
-			std::cout << "Choose an action: \n";
-			std::cout << "1 - Add student\n"
+			std::cout << "Choice an action: \n"
+				<< "1 - Add student\n"
 				<< "2 - Delete student\n"
-				<< "3 - Display information about students\n"
+				<< "3 - Display information about student\n"
 				<< "4 - Find a student\n"
-				<< "5 - Exit\n";
-			std::cin >> choice;
+				<< "5 - Exit\n"; std::cin >> user_choice;
+			system("cls");
+			switch (user_choice)
+			{
+			case ADD:
+			{
+				std::ofstream data_base_file;
+				data_base_file.open("data_base.txt", std::ofstream::app);
+				St.set_information();
+				data_base_file.write((char*)&St, sizeof(Student));
+				data_base_file.close();
+				break;
+			}
+
+			case DELETE:
+			{
+				Students.clear();
+				std::cout << "Enter student ID number: "; std::cin >> find_ID;
+				std::ifstream in_data_base_file;
+				in_data_base_file.open("data_base.txt");
+				while (in_data_base_file.read((char*)&St, sizeof(Student)))
+				{
+					if (St.ID != find_ID)
+					{
+						Students.push_back(St);
+					}
+				}
+				in_data_base_file.close();
+				// Перезапись файла 
+				std::ofstream out_data_base_file;
+				out_data_base_file.open("data_base.txt");
+				for (auto i = Students.begin(); i != Students.end(); i++)
+				{
+					out_data_base_file.write((char*)&(*i), sizeof(Student));
+				}
+				out_data_base_file.close();
+				break;
+			}
+			case VIEW:
+			{
+				std::ifstream in_data_base_file;
+				in_data_base_file.open("data_base.txt");
+				std::cout << "ID" << "\t" << "Name" << "\t" << "Age" << "\t" << "GPA" << std::endl;
+				while (in_data_base_file.read((char*)&St, sizeof(Student)))
+				{
+					St.get_information();
+				}
+				in_data_base_file.close();
+				break;
+			}
+			case FIND:
+			{
+				std::cout << "Enter student ID to search: "; std::cin >> find_ID;
+				std::ifstream in_data_base_file;
+				in_data_base_file.open("data_base.txt");
+				while (in_data_base_file.read((char*)&St, sizeof(Student)))
+				{
+					if (St.ID == find_ID)
+					{
+						std::cout << "ID" << "\t" << "Name" << "\t" << "Age" << "\t" << "GPA" << std::endl;
+						St.get_information();
+					}
+				}
+				in_data_base_file.close();
+				break;
+			}
+			default:
+				break;
+			}
 		}
 		catch (const std::exception& ex)
 		{
@@ -65,55 +113,13 @@ void User_interface(std::vector<Student> & Students, Student &St)
 			std::cin.ignore(256, '\n');
 			continue;
 		}
-		switch (choice)
-		{
-		case ADD:
-			St.set_information();
-			Students.push_back(St);
-			break;
-		case DELETE:
-		{
+	} while (user_choice != 5);
+}
 
-			std::cout << "Enter student ID number: "; std::cin >> ID;
-			auto result = Students.erase(remove_if(Students.begin(), Students.end(), [ID](Student& st) {
-				return st.ID == ID;
-				}), Students.end());
-			if (result == Students.end())
-			{
-				std::cout << "Student not found\n";
-			}
-			else
-			{
-				std::cout << "Student information removed\n";
-			}
-			break;
-		}
-		case VIEW:
-		{
-			std::cout << "Information about students:\n";
-			sort(Students.begin(), Students.end(), [](const Student& student1, const Student& student2)
-				{
-					return student1.ID < student2.ID;
-				});
-			for (auto i = Students.begin(); i != Students.end(); i++)
-			{
-				std::cout << *i;
-			}
-			break;
-		}
-		case FIND:
-		{
-			std::cout << "Enter student ID number: "; std::cin >> ID;
-			auto result = find_if(Students.begin(), Students.end(), [ID](Student& st) {
-				st.get_information();
-				return st.ID == ID;
-				});
-			if (result == Students.end())
-			{
-				std::cout << "Student not found\n";
-			}
-			break;
-		}
-		}
-	} while (choice != 5);
+int main()
+{
+	std::vector<Student>Students;
+	Student St;
+	user_interface(Students, St);
+	return 0;
 }
